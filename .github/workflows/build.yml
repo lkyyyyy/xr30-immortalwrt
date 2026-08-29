@@ -18,6 +18,10 @@ on:
   push:
     branches: ["main", "master"]
 
+concurrency:
+  group: xr30-build-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   SOURCE: ${{ inputs.source || 'v24.10.6' }}
   DEVICE: ${{ inputs.device || 'cmcc_xr30' }}
