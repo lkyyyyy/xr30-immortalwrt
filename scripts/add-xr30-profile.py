@@ -25,6 +25,7 @@ profile = """define Device/cmcc_xr30
   DEVICE_VENDOR := CMCC
   DEVICE_MODEL := XR30 NAND
   DEVICE_DTS := mt7981b-cmcc-xr30
+  SUPPORTED_DEVICES := cmcc,rax3000m
   $(call Device/cmcc_rax3000m_common)
   DEVICE_DTS_OVERLAY := mt7981b-cmcc-rax3000m-nand
   ARTIFACTS := nand-preloader.bin nand-bl31-uboot.fip
