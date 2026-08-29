@@ -16,6 +16,15 @@ with open(path, "r", encoding="utf-8") as f:
 if "\t\tled-running = &green_led;" not in text:
     raise SystemExit("led-running alias not found in " + path)
 
+if '\tmodel = "CMCC RAX3000M";' not in text:
+    raise SystemExit("RAX3000M model string not found in " + path)
+
+text = text.replace(
+    '\tmodel = "CMCC RAX3000M";',
+    '\tmodel = "CMCC XR30";',
+    1,
+)
+
 text = text.replace(
     "\t\tled-running = &green_led;",
     "\t\tled-running = &white_led;",
