@@ -1,0 +1,96 @@
+name: Build ImmortalWrt for XR30 NAND
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "ImmortalWrt 官方稳定版 tag（默认 v24.10.6，可改 v25.12.1）"
+        required: false
+        default: "v24.10.6"
+      device:
+        description: "设备 profile（XR30 NAND 独立目标，保持默认）"
+        required: false
+        default: "cmcc_xr30"
+      extra_packages:
+        description: "额外软件包，空格分隔，例如 kmod-usb-printer luci-app-ttyd"
+        required: false
+        default: ""
+  push:
+    branches: ["main", "master"]
+
+env:
+  SOURCE: ${{ inputs.source || 'v24.10.6' }}
+  DEVICE: ${{ inputs.device || 'cmcc_xr30' }}
+  EXTRA_PACKAGES: ${{ inputs.extra_packages || '' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            autoconf automake binutils bison build-essential bzip2 ca-certificates \
+            clang cmake cpio curl device-tree-compiler file flex g++ gawk gcc-multilib \
+            g++-multilib gettext git libelf-dev libncurses-dev libssl-dev libtool make \
+            patch p7zip-full patchelf python3 python3-pip python3-setuptools qemu-utils \
+            rsync swig unzip upx-ucl wget xz-utils zlib1g-dev zip
+
+      - name: Clone ImmortalWrt
+        run: git clone --depth 1 --branch "$SOURCE" https://github.com/immortalwrt/immortalwrt.git openwrt
+
+      - name: DIY part 1 (add feeds)
+        run: |
+          chmod +x scripts/*.sh
+          cd openwrt
+          ../scripts/diy-part1.sh
+
+      - name: Update and install feeds
+        run: |
+          cd openwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Apply config seed
+        run: cp config/xr30.config openwrt/.config
+
+      - name: DIY part 2 (patches and custom files)
+        run: |
+          cd openwrt
+          ../scripts/diy-part2.sh
+
+      - name: Add extra packages
+        if: env.EXTRA_PACKAGES != ''
+        run: |
+          for pkg in $EXTRA_PACKAGES; do
+            echo "CONFIG_PACKAGE_${pkg}=y" >> openwrt/.config
+          done
+
+      - name: Generate .config
+        run: |
+          cd openwrt
+          make defconfig
+
+      - name: Build firmware
+        run: |
+          cd openwrt
+          make -j$(nproc) V=s > ../build.log 2>&1 || make -j1 V=s >> ../build.log 2>&1
+
+      - name: Upload firmware
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xr30-nand-${{ env.SOURCE }}-${{ env.DEVICE }}
+          path: |
+            openwrt/bin/targets/mediatek/filogic/*cmcc_xr30*
+            openwrt/bin/targets/mediatek/filogic/sha256sums
+            openwrt/.config
+            build.log
+          if-no-files-found: warn
+
