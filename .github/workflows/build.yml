@@ -86,11 +86,17 @@ jobs:
         run: |
           cd openwrt
           make defconfig
+          grep -qx 'CONFIG_TARGET_mediatek_filogic_DEVICE_cmcc_xr30=y' .config
 
       - name: Build firmware
         run: |
           cd openwrt
           make -j$(nproc) V=s > ../build.log 2>&1 || make -j1 V=s >> ../build.log 2>&1
+
+      - name: Verify firmware output
+        run: |
+          test -s openwrt/bin/targets/mediatek/filogic/*cmcc_xr30*squashfs-sysupgrade.itb
+          grep -q 'cmcc_xr30' openwrt/bin/targets/mediatek/filogic/sha256sums
 
       - name: Upload firmware
         if: always()
@@ -103,4 +109,5 @@ jobs:
             openwrt/.config
             build.log
           if-no-files-found: warn
+          include-hidden-files: true
 
