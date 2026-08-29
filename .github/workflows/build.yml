@@ -36,6 +36,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Normalize and validate repository scripts
+        run: |
+          sed -i 's/\r$//' scripts/*.sh scripts/*.py files/etc/uci-defaults/*.sh
+          bash -n scripts/*.sh files/etc/uci-defaults/*.sh
+          python3 -m py_compile scripts/*.py
+
       - name: Install build dependencies
         run: |
           sudo apt-get update
