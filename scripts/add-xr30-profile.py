@@ -34,14 +34,14 @@ profile = """define Device/cmcc_xr30
   SUPPORTED_DEVICES := cmcc,rax3000m
   $(call Device/cmcc_rax3000m_common)
   DEVICE_DTS_OVERLAY := mt7981b-cmcc-rax3000m-nand
-  ARTIFACTS := nand-preloader.bin nand-bl31-uboot.fip
-  ARTIFACT/nand-preloader.bin := mt7981-bl2 spim-nand-ddr4
-  ARTIFACT/nand-bl31-uboot.fip := mt7981-bl31-uboot cmcc_rax3000m-nand
+  ARTIFACTS :=
 endef
 TARGET_DEVICES += cmcc_xr30"""
 
-# Keep the official NAND/eMMC overlays and compatible IDs so existing XR30
+# Keep the official NAND overlay and compatible ID so existing XR30
 # installations using the RAX3000M-compatible layout can sysupgrade safely.
+# Do not emit bootloader artifacts: normal sysupgrade does not need them, and
+# rebuilding or flashing a bootloader unnecessarily increases recovery risk.
 text = text[: match.end()] + "\n\n" + profile + text[match.end() :]
 
 if text.count("define Device/cmcc_xr30") != 1 or text.count(
